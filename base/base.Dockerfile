@@ -57,7 +57,7 @@ COPY faasr_start_invoke_openwhisk.R /action/exec
 RUN chmod +x /action/exec
 
 # Add json schema
-ADD https://raw.githubusercontent.com/FaaSr/FaaSr-package/main/schema/FaaSr.schema.json /action/
+ADD https://raw.githubusercontent.com/Ashish-Ramrakhiani/FaaSr-package/refs/heads/main/schema/FaaSr.schema.json /action/
 
 # Metadata
 LABEL maintainer="Renato Figueiredo <renato [at] ece.ufl.edu>"
