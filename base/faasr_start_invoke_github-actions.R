@@ -39,6 +39,11 @@ if (.faasr[1]=="abort-on-multiple-invocation"){
 funcname <- .faasr$FunctionList[[.faasr$FunctionInvoke]]$FunctionName
 faasr_dependency_install(.faasr, funcname)
 
+if (dir.exists("./FLARE-forecast/FCRE-forecast-code-FaaSr")) {
+  setwd("./FLARE-forecast/FCRE-forecast-code-FaaSr")
+  cat("Changed working directory to:", getwd(), "\n")
+}
+
 # Execute User function
 .faasr <- FaaSr::faasr_run_user_function(.faasr)
 
