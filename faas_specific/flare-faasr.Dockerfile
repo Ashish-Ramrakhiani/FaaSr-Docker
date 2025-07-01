@@ -28,7 +28,7 @@ RUN R -e "devtools::install_github('FaaSr/FaaSr-package')"
 RUN mkdir -p /action
 
 # Download FaaSr entry point files directly from FaaSr-Docker repo
-ADD https://raw.githubusercontent.com/FaaSr/FaaSr-Docker/refs/heads/main/base/faasr_start_invoke_github-actions.R /action/
+ADD https://raw.githubusercontent.com/Ashish-Ramrakhiani/FaaSr-Docker/refs/heads/main/base/faasr_start_invoke_github-actions.R /action/
 ADD https://raw.githubusercontent.com/FaaSr/FaaSr-Docker/refs/heads/main/base/faasr_start_invoke_helper.R /action/
 
 # Download FaaSr JSON schema
