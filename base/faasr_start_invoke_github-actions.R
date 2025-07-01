@@ -39,9 +39,17 @@ if (.faasr[1]=="abort-on-multiple-invocation"){
 funcname <- .faasr$FunctionList[[.faasr$FunctionInvoke]]$FunctionName
 faasr_dependency_install(.faasr, funcname)
 
-if (dir.exists("./FLARE-forecast/FCRE-forecast-code-FaaSr")) {
-  setwd("./FLARE-forecast/FCRE-forecast-code-FaaSr")
-  cat("Changed working directory to:", getwd(), "\n")
+# After dependencies install
+dirs <- list.dirs(".", recursive = TRUE, full.names = TRUE)
+config_dirs <- dirs[grepl("configuration.*glm_aed_flare", dirs)]
+
+if (length(config_dirs) > 0) {
+  # Go up to the repository root from the configuration directory
+  repo_root <- dirname(dirname(config_dirs[1]))  # Go up two levels from configuration/config_name
+  cat("Found config at:", config_dirs[1], "\n")
+  cat("Setting repo root to:", repo_root, "\n")
+  setwd(repo_root)
+  cat("Working directory now:", getwd(), "\n")
 }
 
 # Execute User function
