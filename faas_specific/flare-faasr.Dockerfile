@@ -22,7 +22,7 @@ RUN R -e "devtools::install_github('rqthomas/GLM3r')"
 
 # Install specific tagged version of FaaSr
 RUN sleep 10
-RUN R -e "devtools::install_github('FaaSr/FaaSr-package', ref = 'v1.5.0')"
+RUN R -e "devtools::install_github('FaaSr/FaaSr-package')"
 
 # Create the /action directory that FaaSr expects
 RUN mkdir -p /action
