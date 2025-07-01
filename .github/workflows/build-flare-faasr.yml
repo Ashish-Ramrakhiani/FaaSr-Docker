@@ -10,7 +10,7 @@ on:
       DOCKERHUB_REPO:
         description: 'DockerHub repository to push to'
         required: true
-        default: 'your-username'
+        default: 'ramrakha'
 
 jobs:
   build-and-push:
