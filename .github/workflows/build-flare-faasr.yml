@@ -1,0 +1,44 @@
+name: Build FLARE-FaaSr Container
+
+on:
+  workflow_dispatch:
+    inputs:
+      FLARE_FAASR_VERSION:
+        description: 'Version tag for FLARE-FaaSr image'
+        required: true
+        default: '1.0.0'
+      DOCKERHUB_REPO:
+        description: 'DockerHub repository to push to'
+        required: true
+        default: 'your-username'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: Build and push FLARE-FaaSr image
+        uses: docker/build-push-action@v5
+        with:
+          context: faas_specific
+          file: faas_specific/flare-faasr.Dockerfile
+          push: true
+          tags: |
+            ${{ github.event.inputs.DOCKERHUB_REPO }}/flare-faasr:${{ github.event.inputs.FLARE_FAASR_VERSION }}
+            ${{ github.event.inputs.DOCKERHUB_REPO }}/flare-faasr:latest
+          platforms: linux/amd64
+          
+      - name: Update config with new image
+        run: |
+          echo "Built and pushed: ${{ github.event.inputs.DOCKERHUB_REPO }}/flare-faasr:${{ github.event.inputs.FLARE_FAASR_VERSION }}"
