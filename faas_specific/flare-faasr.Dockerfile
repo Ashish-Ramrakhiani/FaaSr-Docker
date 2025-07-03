@@ -8,7 +8,7 @@ RUN apt-get update && apt-get -y install libgd-dev libmagick++-dev git curl
 RUN install2.r devtools remotes arrow renv RNetCDF forecast imputeTS ncdf4 scoringRules tidybayes tidync udunits2 RcppRoll
 RUN install2.r bench contentid yaml RCurl here feasts gsheet usethis tidymodels xgboost rMR
 RUN sleep 10
-RUN R -e "devtools::install_github('FLARE-forecast/FLAREr', ref = 'v3.1-dev')"
+RUN R -e "devtools::install_github('Ashish-Ramrakhiani/FLAREr', ref = 'v3.1-dev')"
 RUN sleep 10
 RUN R -e "devtools::install_github('cboettig/aws.s3')"
 RUN sleep 10
