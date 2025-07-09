@@ -1,4 +1,4 @@
-name: gcp -> Google Container Registry
+name: gcp -> DockerHub
 
 on: 
   workflow_dispatch:
@@ -26,15 +26,6 @@ on:
         description: 'GitHub repo to install FaaSr from'
         required: true
         default: 'faasr/FaaSr-Package'
-      # GCP_PROJECT_ID is the Google Cloud Project ID
-      GCP_PROJECT_ID:
-        description: 'Google Cloud Project ID'
-        required: true
-      # GCR_REGION is the Google Container Registry region
-      GCR_REGION:
-        description: 'Google Container Registry region'
-        required: true
-        default: 'us-central1'
 
 permissions: write-all
 
@@ -47,22 +38,17 @@ jobs:
         with:
           ref: main
       
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          project_id: ${{ github.event.inputs.GCP_PROJECT_ID }}
-          export_default_credentials: true
-      
-      - name: Configure Docker to use gcloud as a credential helper
-        run: |
-          gcloud auth configure-docker ${{ github.event.inputs.GCR_REGION }}-docker.pkg.dev
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - name: Build GCP image
         run: |
           cd faas_specific
-          docker build -f gcp.Dockerfile -t ${{ github.event.inputs.GCR_REGION }}-docker.pkg.dev/${{ github.event.inputs.GCP_PROJECT_ID }}/faasr/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} .
+          docker build -f gcp.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} .
       
-      - name: Push GCP image to Google Container Registry
+      - name: Push GCP image to DockerHub
         run: |
-          docker push ${{ github.event.inputs.GCR_REGION }}-docker.pkg.dev/${{ github.event.inputs.GCP_PROJECT_ID }}/faasr/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
