@@ -29,7 +29,7 @@ FROM build as runtime
 RUN mkdir -p /lambda_runtime /action
 
 # Copy FaaSr invocation code
-COPY faasr_start_invoke_helper.R faasr_start_invoke_aws-lambda.R faasr_start_invoke_github-actions.R /action/
+COPY faasr_start_invoke_helper.R faasr_start_invoke_aws-lambda.R faasr_start_invoke_github-actions.R faasr_start_invoke_gcp.R /action/
 
 # Copy Python wrapper
 COPY python_wrapper_aws-lambda.py /lambda_runtime/lambda_function.py
