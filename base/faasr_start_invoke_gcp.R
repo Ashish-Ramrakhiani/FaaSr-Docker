@@ -10,7 +10,7 @@
 if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
-devtools::install_github("Ashish-Ramrakhiani/FaaSr-package")
+devtools::install_github("FaaSr/FaaSr-package")
 if (!require("openssl", quietly = TRUE)) {
   install.packages("openssl")
 }
