@@ -192,7 +192,8 @@ faasr_source_r_files <- function(){
     if (rfile != "./faasr_start_invoke_helper.R" && rfile != "./faasr_start_invoke_openwhisk.R" && rfile != "./faasr_start_invoke_aws-lambda.R" && rfile != "./faasr_start_invoke_github-actions.R" && rfile != "./faasr_start_invoke_slurm.R" && rfile != "./faasr_start_invoke_gcp.R" &&  rfile != "./R_packages.R") {
       cat("{\"faasr_source_r_files\":\"Source R file",rfile,"\"}\n")
       tryCatch(expr=source(rfile), error=function(e){
-        cat("{\"faasr_source_r_files\":\"R file",rfile,"has following source error:",e,"\"}\n")
+        # cat("{\"faasr_source_r_files\":\"R file",rfile,"has following source error:",e,"\"}\n")
+	cat("{\\\"faasr_source_r_files\\\":\\\"R file",rfile,"has following source error:",toString(e$message),"\\\"}\\\\n")
 	}
       )
     }
