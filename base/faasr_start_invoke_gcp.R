@@ -6,11 +6,7 @@
 #'              this function. 
 #' @param JSON payload is passed as an input when the docker container starts.
 
-if (!dir.exists("/action")) {
-  dir.create("/action", recursive = TRUE)
-}
-
-setwd("./action")
+# setwd("./action")
 if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
