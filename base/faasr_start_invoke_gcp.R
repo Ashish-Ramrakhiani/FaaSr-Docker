@@ -6,11 +6,11 @@
 #'              this function. 
 #' @param JSON payload is passed as an input when the docker container starts.
 
-setwd("./action")
+# setwd("./action")
 if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
-devtools::install_github("gokulkeshav/FaaSr-package")
+devtools::install_github("FaaSr/FaaSr-package")
 if (!require("openssl", quietly = TRUE)) {
   install.packages("openssl")
 }
