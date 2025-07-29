@@ -52,8 +52,14 @@ if (length(config_dirs) > 0) {
   cat("Working directory now:", getwd(), "\n")
 }
 
+if (faasr_workflow_needs_vm(.faasr)) {
+  .faasr <- FaaSr::faasr_vm_orchestrate(.faasr)
+} else {
+  .faasr <- FaaSr::faasr_run_user_function(.faasr)
+}
+
 # Execute User function
-.faasr <- FaaSr::faasr_run_user_function(.faasr)
+# .faasr <- FaaSr::faasr_run_user_function(.faasr)
 
 # Trigger the next functions
 FaaSr::faasr_trigger(.faasr)
