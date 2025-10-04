@@ -297,6 +297,52 @@ def get_payload_from_env(lambda_event=None):
     return faasr_payload
 
 
+def setup_flare_configuration_directory():
+    """
+    FLARE-SPECIFIC: Detect and set up FLARE configuration directory
+    
+    This function searches for FLARE configuration directories and sets the
+    working directory to the repository root. This mirrors the behavior from
+    the old R-based entry point.
+    
+    Returns:
+        str: Path to the configuration directory if found, None otherwise
+    """
+    current_dir = os.getcwd()
+    logger.info(f"Searching for FLARE configuration in: {current_dir}")
+    
+    # Search for configuration directories recursively
+    config_dirs = []
+    for root, dirs, files in os.walk(current_dir):
+        for dir_name in dirs:
+            # Match pattern: configuration.*glm_aed_flare or just configuration
+            if "configuration" in dir_name.lower() and ("glm_aed_flare" in dir_name.lower() or dir_name.lower() == "configuration"):
+                full_path = os.path.join(root, dir_name)
+                config_dirs.append(full_path)
+                logger.info(f"Found potential FLARE config directory: {full_path}")
+    
+    if len(config_dirs) > 0:
+        # Use the first matching configuration directory
+        config_dir = config_dirs[0]
+        
+        # Go up to the repository root from the configuration directory
+        # Assuming structure: repo_root/configuration/config_name
+        repo_root = Path(config_dir).parent.parent
+        
+        logger.info(f"Found FLARE config at: {config_dir}")
+        logger.info(f"Setting repo root to: {repo_root}")
+        
+        # Change to repository root
+        os.chdir(repo_root)
+        
+        logger.info(f"Working directory now: {os.getcwd()}")
+        
+        return str(config_dir)
+    else:
+        logger.info("No FLARE configuration directory found - proceeding with default directory")
+        return None
+
+
 def handler(event=None, context=None):
     """
     FaaSr entry point:
