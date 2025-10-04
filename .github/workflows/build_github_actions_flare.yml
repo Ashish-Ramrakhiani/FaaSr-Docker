@@ -1,0 +1,119 @@
+name: build-flare-container -> GHCR
+
+on: 
+  workflow_dispatch:
+    inputs:
+      # BASE_IMAGE is the Rocker image to build FLARE from (e.g., rocker/geospatial:4.3.1)
+      BASE_IMAGE:
+        description: 'Rocker base image (e.g., rocker/geospatial:4.3.1)'
+        required: true
+        default: 'rocker/geospatial:4.3.1'
+      # TARGET_NAME is the name of the FLARE image to build
+      # Example: flare-github-actions
+      TARGET_NAME:
+        description: 'name of the FLARE image to build (e.g., flare-github-actions)'
+        required: true
+        default: 'flare-github-actions'
+      # FAASR_VERSION is the FaaSr-py version tag to be used
+      FAASR_VERSION:
+        description: 'FaaSr-py version tag'
+        required: true
+        default: '1.1.2'
+      # FAASR_INSTALL_REPO is the GitHub repo to install FaaSr from
+      FAASR_INSTALL_REPO:
+        description: 'GitHub repo to install FaaSr-py from'
+        required: true
+        default: 'FaaSr/FaaSr-Backend'
+      # GHCR_IO_REPO is the GitHub Container Repository (GHCR) to push image to
+      GHCR_IO_REPO:
+        description: 'GitHub Container Repository (GHCR) to push image to'
+        required: true
+        default: 'faasr'
+      # PLATFORM specifies which FaaS platform this is for
+      PLATFORM:
+        description: 'FaaS platform (github-actions, openwhisk, lambda, gcp, slurm)'
+        required: true
+        default: 'github-actions'
+        type: choice
+        options:
+          - github-actions
+          - openwhisk
+          - lambda
+          - gcp
+          - slurm
+
+permissions: write-all
+
+jobs:
+  build-and-push-flare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to the Github Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.event.inputs.GHCR_IO_REPO }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build FLARE Container image
+        run: |
+          cd faas_specific
+          
+          # Determine which Dockerfile to use based on platform
+          case "${{ github.event.inputs.PLATFORM }}" in
+            "github-actions")
+              DOCKERFILE="github-actions-flare.Dockerfile"
+              ;;
+            "openwhisk")
+              DOCKERFILE="openwhisk-flare.Dockerfile"
+              ;;
+            "lambda")
+              DOCKERFILE="lambda-flare.Dockerfile"
+              ;;
+            "gcp")
+              DOCKERFILE="gcp-flare.Dockerfile"
+              ;;
+            "slurm")
+              DOCKERFILE="slurm-flare.Dockerfile"
+              ;;
+            *)
+              DOCKERFILE="github-actions-flare.Dockerfile"
+              ;;
+          esac
+          
+          echo "Building FLARE image using $DOCKERFILE"
+          
+          docker build \
+            -f $DOCKERFILE \
+            -t ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} \
+            --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} \
+            --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} \
+            --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} \
+            .
+      
+      - name: Push FLARE image to GitHub Container registry
+        run: |
+          docker push ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
+      
+      - name: Tag as latest
+        run: |
+          docker tag ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:latest
+          docker push ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:latest
+      
+      - name: Output image details
+        run: |
+          echo "FLARE image built and pushed successfully!"
+          echo "Image: ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}"
+          echo "Also tagged as: ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:latest"
+          echo ""
+          echo "To use this image in your workflow JSON:"
+          echo "  \"Actioncontainer\": \"ghcr.io/${{ github.event.inputs.GHCR_IO_REPO }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}\""
