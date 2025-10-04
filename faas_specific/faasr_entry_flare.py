@@ -4,7 +4,9 @@ import logging
 import os
 import sys
 import uuid
+import subprocess
 from datetime import datetime
+from pathlib import Path
 
 import boto3
 from FaaSr_py import Executor, FaaSrPayload, S3LogSender, Scheduler, global_config
