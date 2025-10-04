@@ -371,6 +371,14 @@ def handler(event=None, context=None):
     # run user function
     function_executor = Executor(faasr_payload)
     curr_function = faasr_payload["FunctionInvoke"]
+
+    logger.info("FLARE: Setting up configuration directory before function execution")
+    config_path = setup_flare_configuration_directory()
+    
+    if config_path:
+        logger.info(f"FLARE: Configuration setup complete. Config path: {config_path}")
+    else:
+        logger.info("FLARE: No configuration directory setup needed")
     
     function_result = function_executor.run_func(curr_function, start_time)
     logger.debug(f"Finished execution of {curr_function} with result {function_result}")
