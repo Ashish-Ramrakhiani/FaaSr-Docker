@@ -23,15 +23,16 @@ RUN Rscript -e "packages <- readLines('/tmp/required_packages.txt'); install.pac
 
 # Install FLARE-specific packages (match old syntax)
 RUN Rscript -e "library(remotes); install_github('Ashish-Ramrakhiani/FLAREr@v3.1-dev', dependencies = TRUE)"
-RUN Rscript -e "library(remotes); install_github('rqthomas/GLM3r')"
+RUN Rscript -e "library(remotes); install_github('rqthomas/GLM3r', dependencies = TRUE)"
 
 # Set GLM environment variable
 ENV GLM_PATH=GLM3r
 
 # Install supporting forecast packages (no dependencies flag like old version)
-RUN Rscript -e "library(remotes); install_github('eco4cast/neon4cast')"
-RUN Rscript -e "library(remotes); install_github('eco4cast/score4cast')"
-RUN Rscript -e "library(remotes); install_github('eco4cast/read4cast')"
+RUN Rscript -e "library(remotes); install_github('eco4cast/neon4cast', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github('eco4cast/score4cast', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github('eco4cast/read4cast', dependencies = TRUE)"
+
 
 # Set environment variable for platform
 ENV FAASR_PLATFORM="github"
