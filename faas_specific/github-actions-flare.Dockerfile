@@ -7,10 +7,11 @@ ARG FAASR_VERSION
 # FAASR_INSTALL_REPO is the GitHub repository to install FaaSr from
 ARG FAASR_INSTALL_REPO
 
-# Install Python (minimal - only what FaaSr Python needs)
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    libgd3 \
+    libgd-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
