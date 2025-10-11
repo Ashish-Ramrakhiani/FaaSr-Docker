@@ -40,7 +40,7 @@ def get_secret(key, faasr_payload=None):
         case "gcp":
             try:
                 if faasr_payload is None:
-                    logger.warning("cannot fetch secret without the payloadd details")
+                    logger.warning("Cannot fetch secrets in GCP without payload details")
                     return
                 from google.cloud import secretmanager
 
@@ -255,7 +255,8 @@ def get_payload_from_env(lambda_event=None):
     """
     platform = os.getenv("FAASR_PLATFORM").lower()
 
-    store_pat_in_env()
+    if platform in ["github", "slurm", "openwhisk", "lambda"]:
+        store_pat_in_env()
 
     if not platform:
         raise ValueError("FAASR_PLATFORM environment variable not set")
@@ -284,7 +285,8 @@ def get_payload_from_env(lambda_event=None):
         logger.info("Fetching secrets from secret store")
 
         secrets_dict = get_secrets_from_env(faasr_payload)
-        store_pat_in_env(faasr_payload)
+        if platform == "gcp":
+            store_pat_in_env(faasr_payload)
 
        # token_present = store_pat_in_env(secrets_dict)
         faasr_payload.replace_secrets(secrets_dict)
