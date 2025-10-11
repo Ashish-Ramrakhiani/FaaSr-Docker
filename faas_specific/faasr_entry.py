@@ -13,12 +13,12 @@ logger = logging.getLogger("FaaSr_py")
 local_run = False
 
 
-def store_pat_in_env():
+def store_pat_in_env(faasr_payload=None):
     """
     Checks if token is present in dict and stores
     in environment variable "TOKEN" if it is
     """
-    token = get_secret("GH_PAT")
+    token = get_secret("GH_PAT",faasr_payload)
     if not token:
         logger.warning("GitHub PAT not present; your workflow will not be able to pull from private repos and may hit rate limits") # noqa E501
         return
@@ -284,6 +284,7 @@ def get_payload_from_env(lambda_event=None):
         logger.info("Fetching secrets from secret store")
 
         secrets_dict = get_secrets_from_env(faasr_payload)
+        store_pat_in_env(faasr_payload)
 
        # token_present = store_pat_in_env(secrets_dict)
         faasr_payload.replace_secrets(secrets_dict)
