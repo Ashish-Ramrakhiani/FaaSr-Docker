@@ -8,7 +8,6 @@ from datetime import datetime
 
 import boto3
 from FaaSr_py import Executor, FaaSrPayload, S3LogSender, Scheduler, global_config
-from FaaSr_py.vm import workflow_needs_vm, orchestrate_vm
 
 logger = logging.getLogger("FaaSr_py")
 local_run = False
