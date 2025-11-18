@@ -77,7 +77,7 @@ jobs:
               DOCKERFILE="openwhisk-flare.Dockerfile"
               ;;
             "lambda")
-              DOCKERFILE="lambda-flare.Dockerfile"
+              DOCKERFILE="aws-lambda-flare.Dockerfile"
               ;;
             "gcp")
               DOCKERFILE="gcp-flare.Dockerfile"
