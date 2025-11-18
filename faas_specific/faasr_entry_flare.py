@@ -10,25 +10,22 @@ from pathlib import Path
 
 import boto3
 from FaaSr_py import Executor, FaaSrPayload, S3LogSender, Scheduler, global_config
-from FaaSr_py.vm import workflow_needs_vm, orchestrate_vm
 
 logger = logging.getLogger("FaaSr_py")
 local_run = False
 
 
-def store_pat_in_env(dictionary):
+def store_pat_in_env(faasr_payload=None):
     """
     Checks if token is present in dict and stores
     in environment variable "TOKEN" if it is
     """
-    for key, val in dictionary.items():
-        if isinstance(val, dict):
-            if store_pat_in_env(val):
-                return True
-        elif key.lower().endswith("pat"):
-            os.environ["TOKEN"] = val
-            return True
-    return
+    token = get_secret("GH_PAT",faasr_payload)
+    if not token:
+        logger.warning("GitHub PAT not present; your workflow will not be able to pull from private repos and may hit rate limits") # noqa E501
+        return
+    os.environ["GH_PAT"] = token
+
 
 def get_secret(key, faasr_payload=None):
     """
@@ -45,6 +42,9 @@ def get_secret(key, faasr_payload=None):
     match platform:
         case "gcp":
             try:
+                if faasr_payload is None:
+                    logger.warning("Cannot fetch secrets in GCP without payload details")
+                    return
                 from google.cloud import secretmanager
 
                 # Get project ID from payload
@@ -235,6 +235,9 @@ def handle_ow():
     # Get payload from command line argument
     payload = json.loads(sys.argv[1])
 
+    if "GH_PAT" in payload:
+        os.environ["GH_PAT"] = payload["GH_PAT"]
+
     payload_url = payload["PAYLOAD_URL"]
     overwritten = payload["OVERWRITTEN"]
 
@@ -257,6 +260,9 @@ def get_payload_from_env(lambda_event=None):
     Get payload from env
     """
     platform = os.getenv("FAASR_PLATFORM").lower()
+
+    if platform in ["github", "slurm", "openwhisk", "lambda"]:
+        store_pat_in_env()
 
     if not platform:
         raise ValueError("FAASR_PLATFORM environment variable not set")
@@ -285,6 +291,8 @@ def get_payload_from_env(lambda_event=None):
         logger.info("Fetching secrets from secret store")
 
         secrets_dict = get_secrets_from_env(faasr_payload)
+        if platform == "gcp":
+            store_pat_in_env(faasr_payload)
 
         token_present = store_pat_in_env(secrets_dict)
         faasr_payload.replace_secrets(secrets_dict)
