@@ -1,4 +1,5 @@
 name: aws-lambda-flare -> ECR
+
 on: 
   workflow_dispatch:
     inputs:
@@ -66,7 +67,7 @@ jobs:
       
       - name: Build FLARE Lambda image
         run: |
-          cd flare  # Navigate to your FLARE-specific directory
+          cd faas_specific
           docker build \
             -f aws-lambda-flare.Dockerfile \
             -t ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} \
