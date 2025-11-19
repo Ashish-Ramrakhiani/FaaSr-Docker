@@ -1,94 +1,55 @@
-name: aws-lambda-flare -> ECR
+ARG BASE_IMAGE=rocker/geospatial:4.3.1
 
-on: 
-  workflow_dispatch:
-    inputs:
-      # BASE_IMAGE is the full user/name:tag of the base image (e.g., rocker/geospatial:4.3.1)
-      BASE_IMAGE:
-        description: 'Base R image to build from (e.g., rocker/geospatial:4.3.1)'
-        required: true
-        default: 'rocker/geospatial:4.3.1'
-      
-      # TARGET_NAME is the name of the FLARE Lambda image to build
-      TARGET_NAME:
-        description: 'Name of the FLARE Lambda image to build'
-        required: true
-        default: 'faasr-flare-lambda'
-      
-      # FAASR_VERSION is the FaaSr version tag to be used
-      FAASR_VERSION:
-        description: 'FaaSr version'
-        required: true
-        default: '1.1.2'
-      
-      # FAASR_INSTALL_REPO is the GitHub repo to install FaaSr from
-      FAASR_INSTALL_REPO:
-        description: 'GitHub repo to install FaaSr from'
-        required: true
-        default: 'FaaSr/FaaSr-Backend'
-      
-      # AWS_REGION is the AWS ECR region to push image to
-      AWS_REGION:
-        description: 'AWS ECR region to push image to'
-        required: true
-        default: 'us-east-1'
+FROM $BASE_IMAGE
 
-permissions: write-all
+# FAASR_VERSION FaaSr version to install from
+ARG FAASR_VERSION
+# FAASR_INSTALL_REPO is the GitHub repository to install FaaSr from
+ARG FAASR_INSTALL_REPO
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    timeout-minutes: 120  # Increased timeout for FLARE package installation
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.AWS_REGION }}
-      
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      - name: Create ECR repository if not exists
-        run: |
-          aws ecr describe-repositories --repository-names ${{ github.event.inputs.TARGET_NAME }} --region ${{ github.event.inputs.AWS_REGION }} || \
-          aws ecr create-repository --repository-name ${{ github.event.inputs.TARGET_NAME }} --region ${{ github.event.inputs.AWS_REGION }}
-      
-      - name: Build FLARE Lambda image
-        run: |
-          cd faas_specific
-          docker build \
-            -f aws-lambda-flare.Dockerfile \
-            -t ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} \
-            --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} \
-            --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} \
-            --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} \
-            --progress=plain \
-            .
-      
-      - name: Tag image as latest
-        run: |
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} \
-                     ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:latest
-      
-      - name: Push FLARE Lambda images to ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:latest
-      
-      - name: Output image URI
-        run: |
-          echo "Image pushed successfully!"
-          echo "Image URI: ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}"
-          echo "Latest URI: ${{ steps.login-ecr.outputs.registry }}/${{ github.event.inputs.TARGET_NAME }}:latest"
+# Install AWS Lambda Runtime Interface Client and other dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    libgd3 \
+    libgd-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS Lambda Runtime Interface Client (required for Lambda)
+RUN pip3 install --no-cache-dir awslambdaric
+
+# Install FaaSr Python package
+RUN pip3 install --no-cache-dir "git+https://github.com/${FAASR_INSTALL_REPO}.git@${FAASR_VERSION}"
+
+# Copy package list and install missing CRAN packages
+COPY flare_packages.txt /tmp/required_packages.txt
+RUN Rscript -e "packages <- readLines('/tmp/required_packages.txt'); install.packages(packages, dependencies = TRUE)"
+
+# Install FLARE-specific packages
+RUN Rscript -e "library(remotes); install_github('Ashish-Ramrakhiani/FLAREr@v3.1-dev', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github('rqthomas/GLM3r', dependencies = TRUE)"
+
+# Set GLM environment variable
+ENV GLM_PATH=GLM3r
+
+# Install supporting forecast packages
+RUN Rscript -e "library(remotes); install_github('eco4cast/neon4cast', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github('eco4cast/score4cast', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github('eco4cast/read4cast', dependencies = TRUE)"
+
+# Set environment variable for platform
+ENV FAASR_PLATFORM="lambda"
+
+# Lambda requires workdir at /var/task
+WORKDIR /var/task
+
+# Copy FLARE-specific FaaSr entry point for Lambda
+COPY faasr_entry_flare.py ./faasr_entry.py
+
+# Lambda entry point (required)
+ENTRYPOINT ["python3", "-m", "awslambdaric"]
+
+# Lambda handler (required format: filename.function_name)
+CMD ["faasr_entry.handler"]
