@@ -46,7 +46,6 @@ on:
       GHCR_IO_REPO:
         type: string
         required: true
-    secrets: inherit
 
 permissions: write-all
 
