@@ -11,17 +11,17 @@ on:
         required: true
         default: 'FaaSr/FaaSr-Backend'
 
-      # --- Base image builds (optional - skip if already built) ---
-      build_python_base:
-        description: 'Build Python base image'
-        type: boolean
-        default: true
-      build_r_base:
-        description: 'Build R base image'
-        type: boolean
-        default: false
+      # --- Base images (provide already-built image names, or build them first separately) ---
+      BASE_IMAGE_PYTHON:
+        description: 'Full base image name for Python builds (e.g. faasr/base-python:1.2.0)'
+        required: false
+        default: ''
+      BASE_IMAGE_R:
+        description: 'Full base image name for R builds (e.g. faasr/base-r:1.2.0)'
+        required: false
+        default: ''
 
-      # --- Runtime selection for platform images ---
+      # --- Runtime selection ---
       include_python:
         description: 'Include Python runtime in platform builds'
         type: boolean
@@ -53,6 +53,16 @@ on:
         type: boolean
         default: false
 
+      # --- Registry config ---
+      GHCR_IO_REPO:
+        description: 'GHCR org/user (for GitHub Actions images)'
+        required: true
+        default: 'faasr'
+      AWS_REGION:
+        description: 'AWS ECR region (for Lambda images)'
+        required: false
+        default: 'us-east-1'
+
       # --- Tag latest ---
       tag_latest:
         description: 'Tag built images as :latest after build'
@@ -63,77 +73,9 @@ on:
         required: false
         default: 'python'
 
-      # --- Registry config ---
-      DOCKERHUB_BASE_NAME_PYTHON:
-        description: 'DockerHub name for python base image (e.g. base-python)'
-        required: true
-        default: 'base-python'
-      DOCKERHUB_BASE_NAME_R:
-        description: 'DockerHub name for R base image (e.g. base-r)'
-        required: true
-        default: 'base-r'
-      GHCR_IO_REPO:
-        description: 'GHCR org/user (for GitHub Actions images)'
-        required: true
-        default: 'faasr'
-      AWS_REGION:
-        description: 'AWS ECR region (for Lambda images)'
-        required: false
-        default: 'us-east-1'
-      BUILD_FROM_PYTHON:
-        description: 'Base Python image to build from (e.g. python:3.13)'
-        required: true
-        default: 'python:3.13'
-      BUILD_FROM_R:
-        description: 'Base Rocker image to build from (e.g. rocker/tidyverse:4.4)'
-        required: true
-        default: 'rocker/tidyverse:4.4'
-
 permissions: write-all
 
 jobs:
-
-  # ============================================================
-  # BASE IMAGE BUILDS
-  # ============================================================
-
-  build-python-base:
-    name: Build Python Base
-    if: ${{ inputs.build_python_base }}
-    uses: ./.github/workflows/build_base.yml
-    secrets: inherit
-    with:
-      BUILD_FROM: ${{ inputs.BUILD_FROM_PYTHON }}
-      BASE_NAME: ${{ inputs.DOCKERHUB_BASE_NAME_PYTHON }}
-      FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
-
-  build-r-base:
-    name: Build R Base
-    if: ${{ inputs.build_r_base }}
-    uses: ./.github/workflows/build_base_rocker.yml
-    secrets: inherit
-    with:
-      BUILD_FROM: ${{ inputs.BUILD_FROM_R }}
-      BASE_NAME: ${{ inputs.DOCKERHUB_BASE_NAME_R }}
-      FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
-
-  # ============================================================
-  # DETERMINE BASE IMAGE TAGS FOR PLATFORM BUILDS
-  # ============================================================
-
-  resolve-bases:
-    name: Resolve Base Images
-    runs-on: ubuntu-latest
-    if: always()
-    outputs:
-      python_base: ${{ steps.resolve.outputs.python_base }}
-      r_base: ${{ steps.resolve.outputs.r_base }}
-    steps:
-      - name: Resolve base image tags
-        id: resolve
-        run: |
-          echo "python_base=${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.DOCKERHUB_BASE_NAME_PYTHON }}:${{ inputs.FAASR_VERSION }}" >> $GITHUB_OUTPUT
-          echo "r_base=${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.DOCKERHUB_BASE_NAME_R }}:${{ inputs.FAASR_VERSION }}" >> $GITHUB_OUTPUT
 
   # ============================================================
   # GITHUB ACTIONS PLATFORM BUILDS
@@ -142,11 +84,10 @@ jobs:
   build-github-actions-python:
     name: GitHub Actions (Python)
     if: ${{ inputs.build_github_actions && inputs.include_python }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.python_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_PYTHON }}
       TARGET_NAME: github-actions-python
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -155,11 +96,10 @@ jobs:
   build-github-actions-r:
     name: GitHub Actions (R)
     if: ${{ inputs.build_github_actions && inputs.include_r }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.r_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_R }}
       TARGET_NAME: github-actions-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -172,11 +112,10 @@ jobs:
   build-openwhisk-python:
     name: OpenWhisk (Python)
     if: ${{ inputs.build_openwhisk && inputs.include_python }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.python_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_PYTHON }}
       TARGET_NAME: openwhisk-python
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -184,11 +123,10 @@ jobs:
   build-openwhisk-r:
     name: OpenWhisk (R)
     if: ${{ inputs.build_openwhisk && inputs.include_r }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.r_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_R }}
       TARGET_NAME: openwhisk-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -200,11 +138,10 @@ jobs:
   build-aws-lambda-python:
     name: AWS Lambda (Python)
     if: ${{ inputs.build_aws_lambda && inputs.include_python }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.python_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_PYTHON }}
       TARGET_NAME: aws-lambda-python
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -213,11 +150,10 @@ jobs:
   build-aws-lambda-r:
     name: AWS Lambda (R)
     if: ${{ inputs.build_aws_lambda && inputs.include_r }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.r_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_R }}
       TARGET_NAME: aws-lambda-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -230,11 +166,10 @@ jobs:
   build-gcp-python:
     name: GCP (Python)
     if: ${{ inputs.build_gcp && inputs.include_python }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.python_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_PYTHON }}
       TARGET_NAME: gcp-python
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -242,11 +177,10 @@ jobs:
   build-gcp-r:
     name: GCP (R)
     if: ${{ inputs.build_gcp && inputs.include_r }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.r_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_R }}
       TARGET_NAME: gcp-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -258,11 +192,10 @@ jobs:
   build-slurm-python:
     name: SLURM (Python)
     if: ${{ inputs.build_slurm && inputs.include_python }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.python_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_PYTHON }}
       TARGET_NAME: slurm-python
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
@@ -270,11 +203,10 @@ jobs:
   build-slurm-r:
     name: SLURM (R)
     if: ${{ inputs.build_slurm && inputs.include_r }}
-    needs: [resolve-bases]
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
     with:
-      BASE_IMAGE: ${{ needs.resolve-bases.outputs.r_base }}
+      BASE_IMAGE: ${{ inputs.BASE_IMAGE_R }}
       TARGET_NAME: slurm-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
