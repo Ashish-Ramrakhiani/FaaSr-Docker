@@ -56,7 +56,7 @@ on:
       # --- Registry config ---
       GHCR_IO_REPO:
         description: 'GHCR org/user (for GitHub Actions images)'
-        required: true
+        required: false
         default: 'faasr'
       AWS_REGION:
         description: 'AWS ECR region (for Lambda images)'
