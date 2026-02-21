@@ -124,7 +124,6 @@ jobs:
   resolve-bases:
     name: Resolve Base Images
     runs-on: ubuntu-latest
-    needs: [build-python-base, build-r-base]
     if: always()
     outputs:
       python_base: ${{ steps.resolve.outputs.python_base }}
