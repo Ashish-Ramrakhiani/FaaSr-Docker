@@ -63,16 +63,6 @@ on:
         required: false
         default: 'us-east-1'
 
-      # --- Tag latest ---
-      tag_latest:
-        description: 'Tag built images as :latest after build'
-        type: boolean
-        default: false
-      IMAGE_NAME:
-        description: 'Image name suffix to tag as latest (e.g. python, r) - only used when tag_latest is true'
-        required: false
-        default: 'python'
-
 permissions: write-all
 
 jobs:
@@ -210,29 +200,3 @@ jobs:
       TARGET_NAME: slurm-r
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
       FAASR_INSTALL_REPO: ${{ inputs.FAASR_INSTALL_REPO }}
-
-  # ============================================================
-  # TAG AS LATEST (optional, runs after all platform builds)
-  # ============================================================
-
-  tag-latest:
-    name: Tag as Latest
-    if: ${{ inputs.tag_latest }}
-    needs:
-      - build-github-actions-python
-      - build-github-actions-r
-      - build-openwhisk-python
-      - build-openwhisk-r
-      - build-aws-lambda-python
-      - build-aws-lambda-r
-      - build-gcp-python
-      - build-gcp-r
-      - build-slurm-python
-      - build-slurm-r
-    uses: ./.github/workflows/tag_with_latest.yml
-    secrets: inherit
-    with:
-      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
-      FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
-      GHCR_IO_REPO: ${{ inputs.GHCR_IO_REPO }}
-      AWS_REGION: ${{ inputs.AWS_REGION }}
