@@ -11,13 +11,23 @@ on:
         required: true
         default: 'FaaSr/FaaSr-Backend'
 
-      # --- Runtime selection ---
+      # --- Base image builds (optional - skip if already built) ---
       build_python_base:
         description: 'Build Python base image'
         type: boolean
         default: true
       build_r_base:
         description: 'Build R base image'
+        type: boolean
+        default: false
+
+      # --- Runtime selection for platform images ---
+      include_python:
+        description: 'Include Python runtime in platform builds'
+        type: boolean
+        default: true
+      include_r:
+        description: 'Include R runtime in platform builds'
         type: boolean
         default: false
 
@@ -108,8 +118,7 @@ jobs:
       FAASR_VERSION: ${{ inputs.FAASR_VERSION }}
 
   # ============================================================
-  # DETERMINE WHICH BASE IMAGES WERE BUILT
-  # (needed to construct the correct BASE_IMAGE for each platform)
+  # DETERMINE BASE IMAGE TAGS FOR PLATFORM BUILDS
   # ============================================================
 
   resolve-bases:
@@ -133,7 +142,7 @@ jobs:
 
   build-github-actions-python:
     name: GitHub Actions (Python)
-    if: ${{ inputs.build_github_actions && inputs.build_python_base }}
+    if: ${{ inputs.build_github_actions && inputs.include_python }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
@@ -146,7 +155,7 @@ jobs:
 
   build-github-actions-r:
     name: GitHub Actions (R)
-    if: ${{ inputs.build_github_actions && inputs.build_r_base }}
+    if: ${{ inputs.build_github_actions && inputs.include_r }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
@@ -163,7 +172,7 @@ jobs:
 
   build-openwhisk-python:
     name: OpenWhisk (Python)
-    if: ${{ inputs.build_openwhisk && inputs.build_python_base }}
+    if: ${{ inputs.build_openwhisk && inputs.include_python }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
@@ -175,7 +184,7 @@ jobs:
 
   build-openwhisk-r:
     name: OpenWhisk (R)
-    if: ${{ inputs.build_openwhisk && inputs.build_r_base }}
+    if: ${{ inputs.build_openwhisk && inputs.include_r }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
@@ -191,7 +200,7 @@ jobs:
 
   build-aws-lambda-python:
     name: AWS Lambda (Python)
-    if: ${{ inputs.build_aws_lambda && inputs.build_python_base }}
+    if: ${{ inputs.build_aws_lambda && inputs.include_python }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
@@ -204,7 +213,7 @@ jobs:
 
   build-aws-lambda-r:
     name: AWS Lambda (R)
-    if: ${{ inputs.build_aws_lambda && inputs.build_r_base }}
+    if: ${{ inputs.build_aws_lambda && inputs.include_r }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
@@ -221,7 +230,7 @@ jobs:
 
   build-gcp-python:
     name: GCP (Python)
-    if: ${{ inputs.build_gcp && inputs.build_python_base }}
+    if: ${{ inputs.build_gcp && inputs.include_python }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
@@ -233,7 +242,7 @@ jobs:
 
   build-gcp-r:
     name: GCP (R)
-    if: ${{ inputs.build_gcp && inputs.build_r_base }}
+    if: ${{ inputs.build_gcp && inputs.include_r }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
@@ -249,7 +258,7 @@ jobs:
 
   build-slurm-python:
     name: SLURM (Python)
-    if: ${{ inputs.build_slurm && inputs.build_python_base }}
+    if: ${{ inputs.build_slurm && inputs.include_python }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
@@ -261,7 +270,7 @@ jobs:
 
   build-slurm-r:
     name: SLURM (R)
-    if: ${{ inputs.build_slurm && inputs.build_r_base }}
+    if: ${{ inputs.build_slurm && inputs.include_r }}
     needs: [resolve-bases]
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
