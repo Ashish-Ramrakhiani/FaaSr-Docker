@@ -22,6 +22,24 @@ on:
         description: 'FaaSr version tag'
         required: true
 
+  # ---- Added for orchestrator support ----
+  workflow_call:
+    inputs:
+      BUILD_FROM:
+        type: string
+        required: true
+      BASE_NAME:
+        type: string
+        required: true
+      FAASR_VERSION:
+        type: string
+        required: true
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -39,7 +57,7 @@ jobs:
       - name: Build base FaaSr Docker image
         run: |
           cd base
-          docker build -f base-rocker.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.BASE_NAME }}:${{ github.event.inputs.FAASR_VERSION }} --build-arg BUILD_FROM=${{ github.event.inputs.BUILD_FROM }} .
+          docker build -f base-rocker.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.BASE_NAME }}:${{ inputs.FAASR_VERSION }} --build-arg BUILD_FROM=${{ inputs.BUILD_FROM }} .
       - name: Push base FaaSr Docker image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.BASE_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.BASE_NAME }}:${{ inputs.FAASR_VERSION }}
