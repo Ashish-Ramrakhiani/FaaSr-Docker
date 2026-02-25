@@ -4,62 +4,62 @@ on:
   workflow_dispatch:
     inputs:
       FAASR_VERSION:
-        description: 'FaaSr version tag (e.g. 1.2.0)'
+        description: 'version tag e.g. 1.2.0'
         required: true
       FAASR_INSTALL_REPO:
-        description: 'GitHub repo to install FaaSr from'
+        description: 'install repo'
         required: true
         default: 'FaaSr/FaaSr-Backend'
 
-      # --- Base images (provide already-built image names, or build them first separately) ---
+      # --- Base images ---
       BASE_IMAGE_PYTHON:
-        description: 'Full base image name for Python builds (e.g. faasr/base-python:1.2.0)'
+        description: 'Python base image e.g. faasr/base-python:1.2.0'
         required: false
         default: ''
       BASE_IMAGE_R:
-        description: 'Full base image name for R builds (e.g. faasr/base-r:1.2.0)'
+        description: 'R base image e.g. faasr/base-r:1.2.0'
         required: false
         default: ''
 
       # --- Runtime selection ---
       include_python:
-        description: 'Include Python runtime in platform builds'
+        description: 'Python'
         type: boolean
         default: true
       include_r:
-        description: 'Include R runtime in platform builds'
+        description: 'R'
         type: boolean
         default: false
 
       # --- Platform selection ---
       build_github_actions:
-        description: 'Build GitHub Actions image'
+        description: 'GitHub Actions'
         type: boolean
         default: true
       build_openwhisk:
-        description: 'Build OpenWhisk image'
+        description: 'OpenWhisk'
         type: boolean
         default: false
       build_aws_lambda:
-        description: 'Build AWS Lambda image'
+        description: 'AWS Lambda'
         type: boolean
         default: false
       build_gcp:
-        description: 'Build GCP image'
+        description: 'GCP'
         type: boolean
         default: false
       build_slurm:
-        description: 'Build SLURM image'
+        description: 'SLURM'
         type: boolean
         default: false
 
       # --- Registry config ---
       GHCR_IO_REPO:
-        description: 'GHCR org/user (for GitHub Actions images)'
+        description: 'GHCR org/user'
         required: false
         default: 'faasr'
       AWS_REGION:
-        description: 'AWS ECR region (for Lambda images)'
+        description: 'AWS ECR region'
         required: false
         default: 'us-east-1'
 
@@ -68,11 +68,74 @@ permissions: write-all
 jobs:
 
   # ============================================================
+  # INPUT VALIDATION — all platform jobs depend on this
+  # ============================================================
+
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check at least one runtime is selected
+        run: |
+          if [[ "${{ inputs.include_python }}" != "true" && "${{ inputs.include_r }}" != "true" ]]; then
+            echo "::error::At least one runtime (Python or R) must be selected."
+            exit 1
+          fi
+
+      - name: Check at least one platform is selected
+        run: |
+          if [[ "${{ inputs.build_github_actions }}" != "true" && \
+                "${{ inputs.build_openwhisk }}"      != "true" && \
+                "${{ inputs.build_aws_lambda }}"     != "true" && \
+                "${{ inputs.build_gcp }}"            != "true" && \
+                "${{ inputs.build_slurm }}"          != "true" ]]; then
+            echo "::error::At least one platform must be selected."
+            exit 1
+          fi
+
+      - name: Check BASE_IMAGE_PYTHON is provided and well-formed
+        if: ${{ inputs.include_python == true }}
+        run: |
+          img="${{ inputs.BASE_IMAGE_PYTHON }}"
+          if [[ -z "$img" ]]; then
+            echo "::error::BASE_IMAGE_PYTHON is required when the Python runtime is selected."
+            exit 1
+          fi
+          if [[ "$img" != *:* ]]; then
+            echo "::error::BASE_IMAGE_PYTHON must include a tag (e.g. faasr/base-python:1.2.0). Got: '$img'"
+            exit 1
+          fi
+          tag="${img##*:}"
+          if [[ -z "$tag" ]]; then
+            echo "::error::BASE_IMAGE_PYTHON has an empty tag after the colon. Got: '$img'"
+            exit 1
+          fi
+
+      - name: Check BASE_IMAGE_R is provided and well-formed
+        if: ${{ inputs.include_r == true }}
+        run: |
+          img="${{ inputs.BASE_IMAGE_R }}"
+          if [[ -z "$img" ]]; then
+            echo "::error::BASE_IMAGE_R is required when the R runtime is selected."
+            exit 1
+          fi
+          if [[ "$img" != *:* ]]; then
+            echo "::error::BASE_IMAGE_R must include a tag (e.g. faasr/base-r:1.2.0). Got: '$img'"
+            exit 1
+          fi
+          tag="${img##*:}"
+          if [[ -z "$tag" ]]; then
+            echo "::error::BASE_IMAGE_R has an empty tag after the colon. Got: '$img'"
+            exit 1
+          fi
+
+  # ============================================================
   # GITHUB ACTIONS PLATFORM BUILDS
   # ============================================================
 
   build-github-actions-python:
     name: GitHub Actions (Python)
+    needs: validate-inputs
     if: ${{ inputs.build_github_actions && inputs.include_python }}
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
@@ -85,6 +148,7 @@ jobs:
 
   build-github-actions-r:
     name: GitHub Actions (R)
+    needs: validate-inputs
     if: ${{ inputs.build_github_actions && inputs.include_r }}
     uses: ./.github/workflows/build_github-actions.yml
     secrets: inherit
@@ -101,6 +165,7 @@ jobs:
 
   build-openwhisk-python:
     name: OpenWhisk (Python)
+    needs: validate-inputs
     if: ${{ inputs.build_openwhisk && inputs.include_python }}
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
@@ -112,6 +177,7 @@ jobs:
 
   build-openwhisk-r:
     name: OpenWhisk (R)
+    needs: validate-inputs
     if: ${{ inputs.build_openwhisk && inputs.include_r }}
     uses: ./.github/workflows/build_openwhisk.yml
     secrets: inherit
@@ -127,6 +193,7 @@ jobs:
 
   build-aws-lambda-python:
     name: AWS Lambda (Python)
+    needs: validate-inputs
     if: ${{ inputs.build_aws_lambda && inputs.include_python }}
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
@@ -139,6 +206,7 @@ jobs:
 
   build-aws-lambda-r:
     name: AWS Lambda (R)
+    needs: validate-inputs
     if: ${{ inputs.build_aws_lambda && inputs.include_r }}
     uses: ./.github/workflows/build_aws-lambda.yml
     secrets: inherit
@@ -155,6 +223,7 @@ jobs:
 
   build-gcp-python:
     name: GCP (Python)
+    needs: validate-inputs
     if: ${{ inputs.build_gcp && inputs.include_python }}
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
@@ -166,6 +235,7 @@ jobs:
 
   build-gcp-r:
     name: GCP (R)
+    needs: validate-inputs
     if: ${{ inputs.build_gcp && inputs.include_r }}
     uses: ./.github/workflows/build_gcp.yml
     secrets: inherit
@@ -181,6 +251,7 @@ jobs:
 
   build-slurm-python:
     name: SLURM (Python)
+    needs: validate-inputs
     if: ${{ inputs.build_slurm && inputs.include_python }}
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
@@ -192,6 +263,7 @@ jobs:
 
   build-slurm-r:
     name: SLURM (R)
+    needs: validate-inputs
     if: ${{ inputs.build_slurm && inputs.include_r }}
     uses: ./.github/workflows/build_slurm.yml
     secrets: inherit
