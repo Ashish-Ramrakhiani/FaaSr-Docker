@@ -53,6 +53,7 @@ jobs:
             --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} \
             --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} \
             --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} \
+            --build-arg GITHUB_PAT=${{ secrets.GITHUB_TOKEN }} \
             .
 
       - name: Push image to GitHub Container registry

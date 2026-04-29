@@ -6,6 +6,9 @@ FROM $BASE_IMAGE
 ARG FAASR_VERSION
 # FAASR_INSTALL_REPO is the GitHub repository to install FaaSr from
 ARG FAASR_INSTALL_REPO
+# GITHUB_PAT to authenticate install_github calls and avoid 60/hr anonymous rate limit
+ARG GITHUB_PAT
+ENV GITHUB_PAT=${GITHUB_PAT}
 
 RUN apt-get update && apt-get install -y \
     python3 \
