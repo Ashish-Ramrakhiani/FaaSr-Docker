@@ -6,6 +6,10 @@ FROM $BASE_IMAGE
 ARG FAASR_VERSION
 # FAASR_INSTALL_REPO is the GitHub repository to install FaaSr from
 ARG FAASR_INSTALL_REPO
+# FLARER_INSTALL_REPO is the GitHub repository to install FLAREr from
+ARG FLARER_INSTALL_REPO
+# FLARER_VERSION is the FLAREr branch / tag / commit
+ARG FLARER_VERSION
 # GITHUB_PAT to authenticate install_github calls and avoid 60/hr anonymous rate limit
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
@@ -23,7 +27,7 @@ RUN pip3 install --no-cache-dir "git+https://github.com/${FAASR_INSTALL_REPO}.gi
 COPY glm_aed_flare_rs_packages.txt /tmp/required_packages.txt
 RUN Rscript -e "packages <- readLines('/tmp/required_packages.txt'); install.packages(packages, dependencies = TRUE)"
 
-RUN Rscript -e "library(remotes); install_github('Ashish-Ramrakhiani/FLAREr@v3.1-dev', dependencies = TRUE)"
+RUN Rscript -e "library(remotes); install_github(paste0('${FLARER_INSTALL_REPO}', '@', '${FLARER_VERSION}'), dependencies = TRUE)"
 RUN Rscript -e "library(remotes); install_github('rqthomas/GLM3r', dependencies = TRUE)"
 
 ENV GLM_PATH=GLM3r

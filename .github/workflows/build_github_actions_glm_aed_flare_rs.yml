@@ -14,11 +14,19 @@ on:
       FAASR_VERSION:
         description: 'FaaSr-py version tag'
         required: true
-        default: '1.1.2'
+        default: '2.0.5'
       FAASR_INSTALL_REPO:
         description: 'GitHub repo to install FaaSr-py from'
         required: true
         default: 'FaaSr/FaaSr-Backend'
+      FLARER_INSTALL_REPO:
+        description: 'GitHub repo to install FLAREr from (e.g. Ashish-Ramrakhiani/FLAREr)'
+        required: true
+        default: 'Ashish-Ramrakhiani/FLAREr'
+      FLARER_VERSION:
+        description: 'FLAREr branch / tag / commit'
+        required: true
+        default: 'v3.1-dev'
       GHCR_IO_REPO:
         description: 'GitHub Container Repository (GHCR) namespace to push image to'
         required: true
@@ -53,6 +61,8 @@ jobs:
             --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} \
             --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} \
             --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} \
+            --build-arg FLARER_INSTALL_REPO=${{ github.event.inputs.FLARER_INSTALL_REPO }} \
+            --build-arg FLARER_VERSION=${{ github.event.inputs.FLARER_VERSION }} \
             --build-arg GITHUB_PAT=${{ secrets.GITHUB_TOKEN }} \
             .
 
