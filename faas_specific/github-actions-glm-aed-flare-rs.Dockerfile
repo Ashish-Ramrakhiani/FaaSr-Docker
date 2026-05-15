@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libgd-dev \
     libxml2-dev \
     m4 \
+    fakeroot \
+    debhelper \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 RUN git clone --depth 1 https://github.com/AquaticEcoDynamics/AED_Tools.git \
