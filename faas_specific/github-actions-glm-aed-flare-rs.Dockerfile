@@ -34,7 +34,10 @@ RUN mkdir -p /opt/glm \
     && chmod +x /opt/glm/glm
 ENV GLM_PATH=/opt/glm/glm
 
-RUN pip3 install --no-cache-dir "git+https://github.com/${FAASR_INSTALL_REPO}.git@${FAASR_VERSION}"
+# Ubuntu 24.04's Python 3.12 enforces PEP 668; safe to override inside a
+# container since this is the only Python environment.
+RUN pip3 install --no-cache-dir --break-system-packages \
+    "git+https://github.com/${FAASR_INSTALL_REPO}.git@${FAASR_VERSION}"
 
 COPY glm_aed_flare_rs_packages.txt /tmp/required_packages.txt
 RUN Rscript -e "packages <- readLines('/tmp/required_packages.txt'); install.packages(packages, dependencies = TRUE)"
