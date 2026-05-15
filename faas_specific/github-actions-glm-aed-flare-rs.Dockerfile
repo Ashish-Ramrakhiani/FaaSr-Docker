@@ -1,4 +1,4 @@
-# BASE_IMAGE is the full name of the base image e.g. rocker/geospatial:4.3.1
+# BASE_IMAGE is the full name of the base image e.g. rocker/geospatial:4.4.2
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
@@ -14,13 +14,25 @@ ARG FLARER_VERSION
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
 
+# System libs: python for the FaaSr entry, libgd for plotting,
+# libnetcdf + libgfortran for the prebuilt GLM binary.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     libgd3 \
     libgd-dev \
+    libnetcdf19t64 \
+    libgfortran5 \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Drop in the prebuilt GLM binary that matches the Ubuntu 24.04 base.
+RUN mkdir -p /opt/glm \
+    && curl -sL https://raw.githubusercontent.com/rqthomas/GLM_devcontainer/main/binaries/ubuntu/24.04/glm \
+       -o /opt/glm/glm \
+    && chmod +x /opt/glm/glm
+ENV GLM_PATH=/opt/glm/glm
 
 RUN pip3 install --no-cache-dir "git+https://github.com/${FAASR_INSTALL_REPO}.git@${FAASR_VERSION}"
 
@@ -28,9 +40,6 @@ COPY glm_aed_flare_rs_packages.txt /tmp/required_packages.txt
 RUN Rscript -e "packages <- readLines('/tmp/required_packages.txt'); install.packages(packages, dependencies = TRUE)"
 
 RUN Rscript -e "library(remotes); install_github(paste0('${FLARER_INSTALL_REPO}', '@', '${FLARER_VERSION}'), dependencies = TRUE)"
-RUN Rscript -e "library(remotes); install_github('rqthomas/GLM3r', dependencies = TRUE)"
-
-ENV GLM_PATH=GLM3r
 
 RUN Rscript -e "library(remotes); install_github('eco4cast/neon4cast', dependencies = TRUE)"
 RUN Rscript -e "library(remotes); install_github('eco4cast/score4cast', dependencies = TRUE)"

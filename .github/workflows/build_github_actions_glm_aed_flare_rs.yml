@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       BASE_IMAGE:
-        description: 'Rocker base image (e.g., rocker/geospatial:4.3.1)'
+        description: 'Rocker base image (e.g., rocker/geospatial:4.4.2)'
         required: true
-        default: 'rocker/geospatial:4.3.1'
+        default: 'rocker/geospatial:4.4.2'
       TARGET_NAME:
         description: 'name of the image to build'
         required: true
@@ -26,7 +26,7 @@ on:
       FLARER_VERSION:
         description: 'FLAREr branch / tag / commit'
         required: true
-        default: 'v3.1-dev'
+        default: 'flare-io-on-netcdf-v2'
       GHCR_IO_REPO:
         description: 'GitHub Container Repository (GHCR) namespace to push image to'
         required: true
