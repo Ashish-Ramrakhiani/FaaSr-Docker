@@ -1,5 +1,26 @@
 # BASE_IMAGE is the full name of the base image e.g. rocker/geospatial:4.4.2
-ARG BASE_IMAGE
+ARG BASE_IMAGE=rocker/geospatial:4.4.2
+
+# --- Stage 1: build GLM (v4alpha) from source for the runner architecture ---
+FROM $BASE_IMAGE AS glm_builder
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    gfortran \
+    libnetcdf-dev \
+    libgd-dev \
+    libxml2-dev \
+    m4 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
+RUN git clone --depth 1 https://github.com/AquaticEcoDynamics/AED_Tools.git \
+    && cd AED_Tools \
+    && ./fetch_sources.sh glm \
+    && cd GLM && git fetch origin && git switch v4alpha && cd .. \
+    && ./clean.sh \
+    && ./build_glm.sh --no-gui
+
+# --- Stage 2: runtime image ---
 FROM $BASE_IMAGE
 
 # FAASR_VERSION FaaSr version to install from
@@ -14,8 +35,8 @@ ARG FLARER_VERSION
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
 
-# System libs: python for the FaaSr entry, libgd for plotting,
-# libnetcdf + libgfortran for the prebuilt GLM binary.
+# Runtime libs: python for the FaaSr entry, libgd for plotting,
+# libnetcdf + libgfortran for the compiled GLM binary.
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -27,11 +48,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Drop in the prebuilt GLM binary that matches the Ubuntu 24.04 base.
-RUN mkdir -p /opt/glm \
-    && curl -sL https://raw.githubusercontent.com/rqthomas/GLM_devcontainer/main/binaries/ubuntu/24.04/glm \
-       -o /opt/glm/glm \
-    && chmod +x /opt/glm/glm
+# Copy the GLM binary compiled in stage 1.
+COPY --from=glm_builder /build/AED_Tools/GLM/glm /opt/glm/glm
+RUN chmod +x /opt/glm/glm
 ENV GLM_PATH=/opt/glm/glm
 
 # Ubuntu 24.04's Python 3.12 enforces PEP 668; safe to override inside a
