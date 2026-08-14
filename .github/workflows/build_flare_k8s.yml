@@ -1,0 +1,36 @@
+name: build-flare-k8s -> DockerHub
+on:
+  workflow_dispatch:
+    inputs:
+      BASE_IMAGE:
+        description: 'existing FLARE image to layer onto'
+        required: true
+        default: 'ghcr.io/ashish-ramrakhiani/github-actions-glm-aed-flare-rs:latest'
+      TARGET_NAME:
+        description: 'output image name'
+        required: true
+        default: 'github-actions-glm-aed-flare-rs-k8s'
+      FAASR_VERSION:
+        description: 'FaaSr-py version/branch to install (and image tag)'
+        required: true
+        default: 'main'
+      FAASR_INSTALL_REPO:
+        description: 'repo to install FaaSr-py from'
+        required: true
+        default: 'FaaSr/FaaSr-Backend'
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        run: |
+          cd faas_specific
+          docker build -f glm-aed-flare-rs-k8s.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} .
+      - name: Push
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
