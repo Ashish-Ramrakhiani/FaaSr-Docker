@@ -10,14 +10,26 @@ on:
         description: 'output image name'
         required: true
         default: 'github-actions-glm-aed-flare-rs-k8s'
+      IMAGE_TAG:
+        description: 'tag to push the output image under'
+        required: true
+        default: 'main'
       FAASR_VERSION:
-        description: 'FaaSr-py version/branch to install (and image tag)'
+        description: 'FaaSr-py version/branch to install'
         required: true
         default: 'main'
       FAASR_INSTALL_REPO:
         description: 'repo to install FaaSr-py from'
         required: true
         default: 'FaaSr/FaaSr-Backend'
+      FLARER_INSTALL_REPO:
+        description: 'repo to (re)install FLAREr from'
+        required: true
+        default: 'FLARE-forecast/FLAREr'
+      FLARER_VERSION:
+        description: 'FLAREr branch / tag / commit'
+        required: true
+        default: 'main'
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -31,6 +43,14 @@ jobs:
       - name: Build
         run: |
           cd faas_specific
-          docker build -f glm-aed-flare-rs-k8s.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }} --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} .
+          docker build -f glm-aed-flare-rs-k8s.Dockerfile \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.IMAGE_TAG }} \
+            --build-arg BASE_IMAGE=${{ github.event.inputs.BASE_IMAGE }} \
+            --build-arg FAASR_VERSION=${{ github.event.inputs.FAASR_VERSION }} \
+            --build-arg FAASR_INSTALL_REPO=${{ github.event.inputs.FAASR_INSTALL_REPO }} \
+            --build-arg FLARER_INSTALL_REPO=${{ github.event.inputs.FLARER_INSTALL_REPO }} \
+            --build-arg FLARER_VERSION=${{ github.event.inputs.FLARER_VERSION }} \
+            --build-arg GITHUB_PAT=${{ secrets.GITHUB_TOKEN }} \
+            .
       - name: Push
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.FAASR_VERSION }}
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.inputs.TARGET_NAME }}:${{ github.event.inputs.IMAGE_TAG }}

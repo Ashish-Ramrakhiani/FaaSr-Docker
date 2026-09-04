@@ -7,6 +7,14 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 ARG FAASR_INSTALL_REPO=FaaSr/FaaSr-Backend
 ARG FAASR_VERSION=main
+# Swap the baked-in FLAREr for the canonical public release so the image tracks
+# FLARE-forecast/FLAREr (FaaSr integration is on main). dependencies=TRUE pulls any
+# newly-required packages; upgrade='never' keeps the base's working package set stable.
+ARG FLARER_INSTALL_REPO=FLARE-forecast/FLAREr
+ARG FLARER_VERSION=main
+ARG GITHUB_PAT
+ENV GITHUB_PAT=${GITHUB_PAT}
+RUN Rscript -e "library(remotes); install_github(paste0('${FLARER_INSTALL_REPO}', '@', '${FLARER_VERSION}'), dependencies = TRUE, upgrade = 'never')"
 RUN pip3 install --no-cache-dir --break-system-packages --force-reinstall --no-deps \
       "git+https://github.com/${FAASR_INSTALL_REPO}.git@${FAASR_VERSION}" \
  && pip3 install --no-cache-dir --break-system-packages pyjwt
