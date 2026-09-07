@@ -1,7 +1,8 @@
 # BASE_IMAGE is the full name of the base image e.g. rocker/geospatial:4.4.2
 ARG BASE_IMAGE=rocker/geospatial:4.4.2
 
-# --- Stage 1: build GLM (v4alpha) from source for the runner architecture ---
+# --- Stage 1: build GLM from source for the runner architecture ---
+# Upstream retired the v4alpha branch; GLM v4 development is now on main.
 FROM $BASE_IMAGE AS glm_builder
 RUN apt-get update && apt-get install -y \
     git \
@@ -18,7 +19,7 @@ WORKDIR /build
 RUN git clone --depth 1 https://github.com/AquaticEcoDynamics/AED_Tools.git \
     && cd AED_Tools \
     && ./fetch_sources.sh glm \
-    && cd GLM && git fetch origin && git switch v4alpha && cd .. \
+    && cd GLM && git fetch origin && git switch main && cd .. \
     && ./clean.sh \
     && ./build_glm.sh --no-gui
 
